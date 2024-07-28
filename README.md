@@ -24,7 +24,6 @@ class AnotherClass:
 DI_CONFIG = {
     "BaseNotifyer": DIConf(cls_=SomeClass),
     "TGNotifyer": DIConf(cls_=AnotherClass),
-    ...
 }
 
 container = Container(DI_CONFIG)
