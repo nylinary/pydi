@@ -99,30 +99,16 @@ class Container:
 
             @wraps(fun)
             async def wrapped(*args, **kwargs):
-                to_resolve = self._get_params_to_resolve(fun, args, kwargs)
-                params_to_resolve = self._get_configurable(to_resolve)
-                cached = self._get_cached(params_to_resolve)
-                resolved = {
-                    p.param.name: await self._abuild_dependency(p)
-                    for p in params_to_resolve
-                    if p.param.name not in cached
-                }
-                return await fun(*args, **kwargs | resolved | cached)
+                return await self.ainject(fun, *args, **kwargs)
 
             return wrapped
+        else:
 
-        @wraps(fun)
-        def wrapped(*args, **kwargs):
-            to_resolve = self._get_params_to_resolve(fun, args, kwargs)
-            params_to_resolve = self._get_configurable(to_resolve)
-            cached = self._get_cached(params_to_resolve)
-            resolved = {
-                p.param.name: self._build_dependency(p) for p in params_to_resolve if p.param.name not in cached
-            }
+            @wraps(fun)
+            def wrapped(*args, **kwargs):
+                return self.inject(fun, *args, **kwargs)
 
-            return fun(*args, **kwargs | resolved | cached)
-
-        return wrapped
+            return wrapped
 
     def inject(self, fun, *args, **kwargs):
         """Call `fun` with dependencies injected (sync).
@@ -156,10 +142,7 @@ class Container:
         resolved = {
             p.param.name: await self._abuild_dependency(p) for p in params_to_resolve if p.param.name not in cached
         }
-        result = fun(*args, **kwargs | resolved | cached)
-        if inspect.isawaitable(result):
-            return await result
-        return result
+        return await fun(*args, **kwargs | resolved | cached)
 
     # Private helpers
 
