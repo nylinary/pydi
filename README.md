@@ -1,5 +1,5 @@
 # pydic
-Simple Python DI container
+Simple Python DI container.
 
 # Config setup
 
@@ -40,7 +40,7 @@ from my_settings import container
 
 class MyClass:
     @container.use_container
-    def my_super_method(self, some_dependency: BaseNotifyer) -> None:
+    def my_super_method(self, some_dependency: SomeClass) -> None:
         some_dependency.run()
 ```
 
@@ -150,3 +150,68 @@ Parameters are:
     ```python
     DIConf(cls_=SomeClass, calls=[Call(method="set_locale", kwargs=["locale": "EN"])])
     ```
+
+
+# Examples
+
+## Dependencies can be resolved recursivelly. E.g.:
+
+`connectors.py`
+```python
+from pydi.container import DIConf
+from pydi.container import Container
+from abc import ABC, abstractmethod
+
+
+class AbstractSMTPConn(ABC):
+    @abstractmethod
+    def conn(self):
+        ...
+
+
+class OldSMTPConn(AbstractSMTPConn):
+    def conn(self):
+        print("Old SMTP connected!")
+
+
+class NewSMTPConn(AbstractSMTPConn):
+    def conn(self):
+        print("New SMTP connected!")
+```
+
+
+`notifyers.py`
+```python
+class AbstractNotifyer(ABC):
+    @abstractmethod
+    def notify(self):
+        ...
+
+class EmailNotifyer(AbstractNotifyer):
+    @container.use_container
+    def __init__(self, conn: AbstractSMTPConn):
+        self.conn = conn
+
+    def notify(self):
+        with self.conn as c:
+            c.send("Some msg")
+```
+
+```python
+DI_CONFIG = {
+    "AbstractSMTPConn": DIConf(cls_=NewSMTPConn),
+    "Notifyer": DIConf(cls_=EmailNotifyer),
+}
+
+container = Container(DI_CONFIG)
+
+
+class Login:
+    @container.use_container
+    def login(self, notifyer: Notifyer):
+        # some business logic ...
+        notifyer.send("You have logged in")
+
+
+Login().login()
+```
